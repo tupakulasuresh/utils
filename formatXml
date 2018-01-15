@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# 4 spaces
+# export XMLLINT_INDENT="    "
+
+#xmllint --format ${1} > /tmp/${1}.bak && rm ${1} && mv /tmp/${1}.bak ${1} && exit 0
+
+##########################################
+#
+# Author : tupakulasuresh@gmail.com
+#
+# Tool format XML data, data input can be
+# standard input or a file
+#
+##########################################
+
+# defaults
+noout=0
+open=0
+filename_list=''
+
+function USAGE()
+{
+    echo "USAGE: $(basename $0) [ -f|--file <file1 file2 file3 ...>] [-n|--noout] [-o|--open] [-h|--help]"
+    echo "Search and display files matching specified criteria"
+    echo "   -f|--file  : Specify file to be formated"
+    echo "   -n|--noout : Specify to suppress output on stdout (default=off)"
+    echo "   -o|--open  : Specify to open the formated output file (default=off)"
+    echo "   -h|--help  : To display this help"
+    exit -1
+}
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -f|--file)
+            shift 1
+            filename_list="${filename_list} ${1}"
+            ;;
+         -n|--noout)
+            noout=1
+            ;;
+         -o|--open)
+            open=1
+            ;;
+         -e|--editor)
+            shift 1 
+            editor=${1}
+            ;;
+         -h|--help)
+            USAGE
+            ;;
+        *)
+            filename_list="${filename_list} ${1}"
+            ;;
+    esac
+    shift 1
+done
+
+function format_xml_file()
+{
+    if [ ! -f ${1} ]; then
+        echo "${1} : No such file or directory"
+        exit -2
+    fi
+    echo -e "Formatting xml data in file ${1} ...\n"
+    if [ $noout -eq 1 ]; then
+        # don't dump on stdout, write data to the file
+        xmllint --format ${1} --output ${1}
+        echo "Formatted xml data is in ${1}"
+    else
+         xmllint --format ${1}
+    fi
+}
+
+
+# when input is a list of files
+if [ $(echo "${filename_list}" | wc -w) -gt 0 ]; then
+    for filename in ${filename_list}; do
+        if [ ! -f ${filename} ]; then
+            echo "${filename} : No such file or directory. Skipping"
+            continue
+        fi
+        format_xml_file ${filename}
+    done
+else
+    # no files, input is read from stdin
+    filename_list="/tmp/formated_data_$(date +%s).xml"
+    echo "Input xml data and hit return"
+    echo > ${filename_list}
+    while read line;do
+        # break if the line is empty
+        [ -z "$line" ] && break
+        # to trim the line before writing to file
+        echo -n $(echo "$line") >> ${filename_list}
+    done
+    format_xml_file ${filename_list}
+fi
+
+# if requested to open, use the editor to open
+if [ ${open} -eq 1 ]; then
+    for filename in ${filename_list}; do
+        echo "Opening formatted xml file ${filename}"
+        env vim ${filename}
+    done
+fi
+
+exit -1

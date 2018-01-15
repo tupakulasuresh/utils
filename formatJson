@@ -1,0 +1,44 @@
+#!/bin/bash
+
+##########################################
+#
+# Author : tupakulasuresh@gmail.com
+#
+# Tool format Json data, data input can be
+# standard input or a file
+#
+##########################################
+
+# 4 spaces
+# export XMLLINT_INDENT="    "
+
+function format_json_file()
+{
+    echo -e "Formatting json data in file ${filename} ...\n"
+    filename=$1
+    cat ${filename} | python -m json.tool 
+}
+
+
+if [ $# -ne 0  ]; then
+    for i in $*; do
+        for filename in $i; do
+            if [ ! -f ${filename} ]; then
+                echo "${filename} : No such file or directory"
+                continue
+            fi
+            format_json_file ${filename}
+        done
+    done
+else
+    filename="/tmp/formated_data_$(date +%s).json"
+    echo > $filename
+    while read line;do
+        # break if the line is empty
+        [ -z "$line" ] && break
+        # to trim the line before writing to file
+        echo -n $(echo "$line") >> $filename
+    done
+    format_json_file ${filename}
+fi
+exit -1

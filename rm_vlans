@@ -1,0 +1,18 @@
+#!/bin/bash
+
+ if [ -z "$1" ]; then
+    echo "Please provide the interface name"
+    exit 0
+fi
+
+ if [ ! -z "$2" ]; then
+    echo "Deleting all vlans except $skip_vlan vlan on interface $1"
+    vlan_list=$(ifconfig | grep -e "^${1}\." | awk '{print $1}' | grep -v ":" | grep -v $2)
+else
+    echo "Deleting all vlans on interface $1"
+    vlan_list=$(ifconfig | grep -e "^${1}\." | awk '{print $1}' | grep -v ":")
+fi
+
+for i in $vlan_list ; do vconfig rem $i ; done
+
+

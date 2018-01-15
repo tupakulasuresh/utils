@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# defaults
+filename="*.py"
+search_pattern=""
+dir_name=$(pwd)
+grep_opts="l"
+
+function boxify()
+{
+    size=$(echo $1 | wc -c)
+    if [ -z $2 ]; then
+        width=1
+    else
+        width=$2
+    fi
+    size=$((size+width))
+    line=$(printf "%${size}s" | tr ' ' '-')
+    space=$(printf "%${width}s")
+    #line=$(seq  -s"-" 0 ${size} | sed -e 's/[0-9]//g')
+    #space=$(seq  -s" " 0 ${width} | sed -e 's/[0-9]//g')
+    echo $line
+    echo "${space}$1"
+    echo $line
+}
+
+function USAGE()
+{
+    echo "USAGE: $(basename $0) [ -d|--dir <dir> ] [ -f|--file <file_name|file_name_pattern>] [-s|--search <pattern>] [-n|--num] [-i|--ignorecase]"
+    boxify "Search and display files matching specified criteria"
+    echo "   -d|--dir        : Specify a valid directory name (default=${dir_name})"
+    echo "   -f|--file       : Specify file extension type to search for (default=${filename})"
+    echo "   -s|--search     : Specify the match pattern. If speicfied, this will display all the files that matches the specified pattern (default=\"${search_for}\")"
+    echo "   -i|--ignorecase : Specify if the search should be case insensitive (default=off)"
+    echo "   -n|--num        : Specify if the search should print the linenum and matching line along with the filename (default=off)"
+    echo "   -h|--help       : To display this help"
+    exit -1
+}
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -d|--dir)
+            shift 1
+            dir_name=$(readlink -f $1)
+            if [ ! -d ${dir_name} ]; then 
+                echo "${dir_name} : No such directory"
+                USAGE
+            fi
+            ;;
+        -f|--file)
+            shift 1
+            filename="$1"
+            ;;
+         -s|--search)
+            shift 1
+            search_pattern=$1
+            ;;
+         -i|--ignorecase)
+            grep_opts="${grep_opts}i"
+            ;;
+         -n|--num)
+            # remove the default "l" (list filenames only) option
+            grep_opts=$(echo ${grep_opts} | sed 's/l//g')
+            grep_opts="${grep_opts}Hn"
+            ;;
+         -h|--help)
+            USAGE
+            ;;
+        *)
+            search_pattern=$1
+            ;;
+    esac
+    shift 1
+done
+
+#echo "dir=${dir_name} : searh_pattern=${search_pattern} : name = ${name}"
+
+base_cmd="find ${dir_name} -type f"
+
+if [ ! -z "${filename}" ]; then 
+    base_cmd="${base_cmd} -name \"${filename}\""
+fi
+if [ ! -z "${search_pattern}" ]; then 
+    base_cmd="${base_cmd} -exec grep -${grep_opts} -- \"${search_pattern}\" {} \;"
+fi
+
+boxify "$base_cmd"
+eval $base_cmd
+
+

@@ -1,0 +1,64 @@
+#!/bin/bash
+source ~/myUtils/BASH_LIB_UTILS.sh
+
+function cleanup_logs()
+{
+
+    T1=$(date +%s)
+    
+    if [ ${1} == "d" ]; then 
+        log_msg -n "Deleting log directories ... "
+    else 
+        log_msg -n "Deleting log files ... "
+    fi
+    file_list=$(find . ! -type ${1} ! -newermt ${remove_up_to})
+    if [ $(echo ${file_list} | wc -w) -eq 0 ]; then
+        log_msg "[No data]"
+    else
+        for filename in ${file_list}; do
+            sudo rm -rf ${filename}
+        done
+        log_msg "$(time_taken)"
+    fi
+    return 0
+}
+    
+    
+
+
+# TODO: point this directory to the path from where the files to be deleted
+log_dir='/local/stupakul/logs/harness_logs'
+retain_logs="1" ;# no. of months logs to retain
+
+if [ $# -gt 0 ]; then 
+    retain_logs=$1
+fi
+
+year=$(date +%Y)
+day=$(date +%d)
+remove_up_to_month=$(echo "$(date +%m) - $retain_logs" | bc)
+
+if [ $remove_up_to_month -le 0 ]; then 
+    year=$(echo "${year} - 1" | bc)
+    remove_up_to_month=$(echo "12 + ${remove_up_to_month}" | bc)
+fi
+
+remove_up_to="${remove_up_to_month}/${day}/${year}"
+today=$(date +%m/%d/%Y)
+cd $log_dir
+
+while true; do 
+    echo -n "Do you want to remove logs older than ${remove_up_to}  [Y/N] : "
+    read choice
+    if [ $(echo $choice | grep -i -c "^n$") -gt 0 ]; then
+        exit 0
+    elif [ $(echo $choice | grep -i -c "^y$") -gt 0 ]; then
+        cleanup_logs "d" 
+        cleanup_logs "f"
+        exit 0
+    fi 
+done
+exit 0
+
+#find . -type d ! -newermt "10/01/2016"
+#find . -type d ! -newermt "10/01/2016"   | grep stdout  | cut -d "_" -f 4 | sort -u

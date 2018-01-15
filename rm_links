@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ "0$1" != "0-f" ]; then 
+   echo -n "Removing all softlinks in $(pwd) [yes|n] : "
+   read choice
+   while true; do 
+     if [ "0$choice" == "0yes" ]; then
+        break
+     elif [ "0$choice" == "0n" -o "0$choice" == "0N" -o "0$choice" == "0no" ]; then
+        exit 0
+     else
+        echo "Valid choices are yes|n"
+        echo -n "Enter your choice [yes|n] : "
+        read choice
+     fi
+   done
+fi
+
+file_list=$(ls -l | grep ^l | awk '{print $(NF-2)}')
+if [ -z ${file_list} ]; then 
+   echo "No softlinks in this directory"
+else
+   echo "Deleting links $(echo $file_list | sed 's/ /,/')"
+   rm -f $file_list
+fi

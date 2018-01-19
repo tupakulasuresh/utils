@@ -5,17 +5,19 @@ import time
 import optparse
 import os
 import sys
+import re
 
 DNS_SUFFIX = ''
 
 
 class File_Monitor(object):
 
-    def __init__(self, testbed, username, password, filename, wait_for):
+    def __init__(self, testbed, username, password, path, filename, wait_for):
         self.testbed = testbed
         self.ip = IpUtils.get_ip_from_name(self.testbed, DNS_SUFFIX)
         self.wait_for = wait_for
         self.filename = filename
+        self.path = path
         self.sess_mgr = SessionManager(
             ip=self.ip,
             username=testbed,
@@ -25,17 +27,15 @@ class File_Monitor(object):
         self.sess_mgr.execute_cmd('stty columns 1000')
 
     def get_latest_file(self):
-        path = '/%s/results/%s' % (
-            self.testbed, time.strftime('%Y/Month_%m/%b_%d'))
-        cmd = "find %s -name \"%s\" -mmin -1" % (path, self.filename)
+        cmd = "find %s -name \"%s\" -mmin -1" % (self.path, self.filename)
         while True:
             output = self.sess_mgr.execute_cmd(cmd, return_output=True)
-            output = output.split("\n")
-            if len(output) >= 3:
-                return output[1]
-            else:
-                print "Log file not avialable. Will try after %ss ..." % self.wait_for
-                time.sleep(self.wait_for)
+            if not re.search('No such file or directory', output):
+                output = output.split("\n")
+                if len(output) >= 3:
+                    return output[1]
+            print "Log file not avialable. Will try after %ss ..." % self.wait_for
+            time.sleep(self.wait_for)
 
     def monitor_file(self):
         filename = self.get_latest_file()
@@ -56,7 +56,7 @@ def parse_cmdline_args(input_args):
     parser.add_option("-w", "--wait", action="store", dest="wait_for",
                       default=5,
                       help="testbed name")
-    parser.add_option("-p", "--password", action="store", dest="password",
+    parser.add_option("--password", action="store", dest="password",
                       default='tigris',
                       help="Specify the access password")
     parser.add_option("-l", "-u", "--login", "--username", action="store",
@@ -66,9 +66,15 @@ def parse_cmdline_args(input_args):
     parser.add_option("-f", "--filename", action="store", dest="filename",
                       default='test_console*.txt',
                       help="file name to be monitored")
+    parser.add_option("-p", "--path", action="store", dest="path",
+                      default=None,
+                      help="path where file is located")
     (options, args) = parser.parse_args(input_args)
     if options.login is None:
         options.login = options.testbed
+    if options.path is None:
+        options.path = '/%s/results/%s' % (
+            options.testbed, time.strftime('%Y/Month_%m/%b_%d'))
     return options
 
 
@@ -76,7 +82,7 @@ if __name__ == '__main__':
     try:
         options = parse_cmdline_args(sys.argv[1:])
         fileObj = File_Monitor(options.testbed, options.login, options.password,
-                               options.filename, options.wait_for)
+                               options.path, options.filename, options.wait_for)
         fileObj.monitor_file()
     except KeyboardInterrupt:
         print "User interrupt. Terminating the process"

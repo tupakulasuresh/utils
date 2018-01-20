@@ -2,6 +2,7 @@
 
 from utils import SessionManager, IpUtils
 import time
+from datetime import datetime
 import optparse
 import os
 import sys
@@ -69,12 +70,24 @@ def parse_cmdline_args(input_args):
     parser.add_option("-p", "--path", action="store", dest="path",
                       default=None,
                       help="path where file is located")
+    parser.add_option("--date", action="store", dest="date",
+                      default=None,
+                      help="date to represent path name foramt(dd/mm/yyyy)")
     (options, args) = parser.parse_args(input_args)
     if options.login is None:
         options.login = options.testbed
+    try:
+        if options.date is not None:
+            options.date = datetime.strptime(options.date, '%m/%d/%Y')
+        else:
+            options.date = datetime.now()
+    except Exception:
+        print("Invalid date format '%s'. Should in '%m/%d/%Y'" % options.date)
+        sys.exit(-1)
+
     if options.path is None:
         options.path = '/%s/results/%s' % (
-            options.testbed, time.strftime('%Y/Month_%m/%b_%d'))
+            options.testbed, options.date.strftime('%Y/Month_%m/%b_%d'))
     return options
 
 

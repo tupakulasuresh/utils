@@ -5,6 +5,10 @@ import logging
 # import pdb
 import socket
 import pexpect
+import struct
+import fcntl
+import termios
+import signal
 
 SSH_OPTS = "-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 
@@ -190,6 +194,13 @@ class SessionManager(object):
         LOG.info(msg)
         return self.open_connection(cmd)
 
+    def sigwinch_passthrough(self, sig, data):
+        print "Changing window size"
+        s = struct.pack("HHHH", 0, 0, 0, 0)
+        a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(),
+                                              termios.TIOCGWINSZ, s))
+        self.session.setwinsize(a[0], a[1])
+
     def getSshSession(self):
         msg = "Using ssh to connect %s" % self.ip
         cmd = "/usr/bin/ssh %s -l %s %s" % (SSH_OPTS, self.username, self.ip)
@@ -337,6 +348,11 @@ class SessionManager(object):
             return self.session.isalive()
 
     def interact(self):
+        try:
+            signal.signal(signal.SIGWINCH, SessionManager.sigwinch_passthrough)
+        except Exception:
+            pass
+
         if not self.isalive():
             raise Exception("No active session for %s" % self.ip)
 

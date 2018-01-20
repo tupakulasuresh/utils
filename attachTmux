@@ -1,0 +1,186 @@
+#!/bin/bash
+source ~/myUtils/BASH_LIB_UTILS.sh
+td_bin='~/myUtils/td'
+wait_for=0.5
+
+function tmux_work()
+{
+
+    tmux new-session -s "${1}" -d -n "PyGash"
+    tmux split-window -v
+    tmux send-keys 'C-m' 'source ~/.bashrc' 'C-m' 'C-l'
+
+    tmux new-window  -t "${1}:1" -n "CLI"
+    tmux new-window  -t "${1}:2" -n "Nodes"
+    tmux new-window  -t "${1}:3" -n "Nodes"
+    tmux new-window  -t "${1}:4" -n "Nodes"
+    tmux new-window  -t "${1}:5" -n "Work"
+    tmux send-keys 'source ~/.bashrc; cd ~/ws/' 'C-m' 'C-l'
+    tmux new-window  -t "${1}:6" -n "Lib"
+    tmux send-keys 'source ~/.bashrc; cd ~/ws/' 'C-m' 'C-l'
+    tmux new-window  -t "${1}:7" -n "Lib"
+    tmux send-keys 'source ~/.bashrc; cd ~/ws/' 'C-m' 'C-l'
+    tmux new-window  -t "${1}:8" -n "Logs"
+    tmux send-keys 'source ~/.bashrc; cd ~/logs' 'C-m' 'C-l'
+    tmux new-window  -t "${1}:9" -n "Notes"
+    tmux send-keys 'source ~/.bashrc; cd ~/notes' 'C-m' 'C-l'
+    tmux selectp -t "${1}:9"
+    tmux split-window -h
+    tmux send-keys 'source ~/.bashrc; htop' 'C-m' 'C-l'
+    tmux split-window -v
+    tmux send-keys 'source ~/.bashrc; su -' 'C-m'
+
+}
+
+function tmux_nsg()
+{
+
+    tmux new-session -d -s "${1}" -n "Gash" 
+    tmux selectp -t "${1}:0"
+    tmux split-window -h
+    tmux send-keys 'C-m' "source ~/.bashrc; $td_bin -t ${1}" 'C-m'
+    sleep $wait_for
+
+    tmux new-window  -t "${1}:1" -n "VSC-Console"
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-g --console --log" 'C-m'
+    sleep $wait_for
+    tmux selectp -t "${1}:1"
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-h --console --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-i --console --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-j --console --log" 'C-m'
+    sleep $wait_for
+    tmux select-layout tile
+
+    tmux new-window  -t "${1}:2" -n "VSC-session"
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-g --log" 'C-m'
+    sleep $wait_for
+    tmux selectp -t "${1}:2"
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-h --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-i --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d dut-j --log" 'C-m'
+    sleep $wait_for
+    tmux select-layout tile
+
+    tmux new-window  -t "${1}:3" -n "NSG(OVS)"
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1}  -d ovs-1 --log" 'C-m'
+    sleep $wait_for
+    tmux selectp -t "${1}:3"
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1}  -d ovs-2 --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1}  -d ovs-3 --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1}  -d ovs-4 --log" 'C-m'
+    sleep $wait_for
+    tmux select-layout tile
+
+    # getting windows from Work session
+    tmux link-window -s Work:4 -t 4
+    tmux link-window -s Work:5 -t 5
+    tmux link-window -s Work:6 -t 6
+
+    tmux new-window  -t "${1}:7" -n "SR/VSD"
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d esr.b --console --log" 'C-m'
+    sleep $wait_for
+    tmux selectp -t "${1}:7"
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d esr.c --console --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1} -d esr.f --console --log" 'C-m'
+    sleep $wait_for
+    tmux split-window -v
+    tmux send-keys "source ~/.bashrc; $td_bin -t ${1}  -d vsd-1 --log" 'C-m'
+    sleep $wait_for
+    tmux select-layout tile
+
+    # getting windows from Work session
+    tmux link-window -s Work:8 -t 8
+    tmux link-window -s Work:9 -t 9
+}
+
+function tmux_monitor()
+{
+    return
+}
+
+
+function tmux_default()
+{
+    tmux new-session -s "${1}"   -n "Gash" -d
+    tmux new-window  -t "${1}:1" -n "Work"
+    tmux new-window  -t "${1}:2" -n "Work"
+    tmux new-window  -t "${1}:3" -n "Work"
+}
+
+
+function my_help()
+{
+
+    echo "Usage: $(basename $0) <session_name> [<testbed_type=nsg>]"
+    exit 0
+}
+
+
+if [ $# -eq 0 ]; then 
+    tmux attach
+else
+    if [ $1 == "--help" -o $1 == "-h" ]; then
+        my_help
+    #else
+    #    tmux attach -t ${1} || tmux new -s ${1}
+    #fi
+    #exit 0
+    # old code (deprecated)
+    elif [ $(tmux ls | grep -c -- "${1}:") -gt 0 ]; then
+        boxify "Attaching TMUX session $1"
+        opinion="y"
+    else
+        log_msg -n "No existing session with name \"$1\". Do you want me to start a new session [y] : "
+        read opinion
+        if [ -z ${opinion} ]; then
+            opinion="y"
+        fi
+        if [ ${opinion} == "y" ]; then
+            # start tmux-server is not running
+            log_msg -n "Creating and customizing tmux session ... "
+            tmux start-server
+            if [ $# -eq 2 ]; then
+                case $(echo $2 | tr '[:upper:]' '[:lower:]') in
+                    "nsg")
+                        tmux_nsg $1;;
+                    *)
+                        echo "$2: mapping yet to specify"
+                        exit -1;;
+                esac
+            else
+                case $(echo $1 | tr '[:upper:]' '[:lower:]') in
+                    "work")
+                        tmux_work $1;;
+                    "default")
+                        tmux_default $1;;
+                    *)
+                        tmux_nsg $1;;
+                esac
+            fi
+            log_msg "[Done]"
+       fi
+    fi
+    if [ ${opinion} == "y" ]; then
+        log_msg -n "Attaching session ... "
+        sleep 0.5
+        tmux attach-session -t ${1}
+    fi
+fi

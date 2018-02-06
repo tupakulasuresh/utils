@@ -28,7 +28,7 @@ class File_Monitor(object):
         self.sess_mgr.execute_cmd('stty columns 1000')
 
     def get_latest_file(self):
-        cmd = "find %s -name \"%s\" -mmin -1" % (self.path, self.filename)
+        cmd = "find %s -name \"%s\" -mmin -1 -print -quit" % (self.path, self.filename)
         while True:
             output = self.sess_mgr.execute_cmd(cmd, return_output=True)
             if not re.search('No such file or directory', output):

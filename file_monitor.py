@@ -24,17 +24,27 @@ class File_Monitor(object):
             username=testbed,
             password=password,
         )
-        self.sess_mgr.connect_to_node()
+        self.init_session()
+
+    def init_session(self):
+        self.sess_mgr.reconnect()
         self.sess_mgr.execute_cmd('stty columns 1000')
+        self.sess_mgr.session.timeout = 100
 
     def get_latest_file(self):
         cmd = "find %s -name \"%s\" -mmin -1 -print -quit" % (self.path, self.filename)
         while True:
             output = self.sess_mgr.execute_cmd(cmd, return_output=True)
-            if not re.search('No such file or directory', output):
-                output = output.split("\n")
-                if len(output) >= 3:
-                    return output[1]
+            try:
+                if not re.search('No such file or directory', output):
+                    output = output.split("\n")
+                    if len(output) >= 3:
+                        return output[1]
+            except Exception as e:
+                print "Got Exception '%s'" % str(e)
+                # usually session would close when there is an exception, reconnecting
+                self.init_session()
+
             print "Log file not avialable. Will try after %ss ..." % self.wait_for
             time.sleep(self.wait_for)
 

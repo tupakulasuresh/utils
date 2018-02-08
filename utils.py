@@ -330,6 +330,10 @@ class SessionManager(object):
         except Exception:
             return False
 
+    def reconnect(self):
+        if not self.isalive():
+            self.connect_to_node()
+
     def connect_to_node(self):
         status = False
         # try ssh/telnet if protocol not specified and previous attempt failed

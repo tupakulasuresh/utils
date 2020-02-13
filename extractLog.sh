@@ -8,7 +8,7 @@
 
 
 # Parsing the command line arguments
-outputfile="/tmp/extractlog"
+outputfile=""
 while [ "$#" -gt 0 ]; do
 	opt=$1
 	case $opt in
@@ -51,7 +51,8 @@ elif [ ! -f "$fileName" ]; then
     exit 0
 fi
 
-script_exec_pattern="BEGIN ::TestDB::TestCase::"
+script_start_pattern="MASTER: BEGIN ::TestDB::TestCase::.*"
+script_end_pattern="MASTER: END ::TestDB::TestCase::.*"
 
 # check if the 1st match string is specified
 # also verify if it is present in the log file
@@ -59,12 +60,15 @@ if [ -z "$str1" ]; then
     echo "specify the 1st string to be matched"
     exit 0
 else 
-    str1="${script_exec_pattern}${str1}"
-    stLine=`grep -n "${str1}" $fileName | cut -d : -f1` 
+    stLine=`grep -n "${script_start_pattern}${str1}" $fileName | cut -d : -f1 | head -1` 
     if [ -z "$stLine" ]; then
-         echo "No match found for string \"$str1\" in $fileName"
+         echo "No match found for string \"${script_start_pattern}${str1}\" in $fileName"
 	 exit 0
     fi
+fi
+
+if [ -z ${outputfile} ]; then
+    outputfile="${str1}.txt"
 fi
 
 # check if the 2nd match string is specified
@@ -72,17 +76,18 @@ fi
 # if specified, check its present in the log file
 # if both above conditions fail, dump from 1st match till the last line
 if [ -z "$str2" ]; then
-    echo "Not specified the end test case. Considering immediate next script"
-    str2=`sed -n "/$str1/,/$script_exec_pattern/p" $fileName | grep -o -m2 "$script_exec_pattern.*" | awk '{print $(NF-1)}' | sed '1d'`
-    echo "Next script is \"$str2\""
+    # echo "Not specified the end test case. Considering immediate next script"
+    # str2=`sed -n "/$str1/,/$script_end_pattern/p" $fileName | grep -o -m2 "$script_end_pattern.*" | awk '{print $(NF-1)}' | sed '1d'`
+    # echo "Next script is \"$str2\""
+	str2="${script_end_pattern}${str1}"
 else
-    str2="${script_exec_pattern}${str2}"
+    str2="${script_start_pattern}${str2}"
 fi
 
 if [  -z "$str2" ]; then
     echo "Not able to extract the immediate next script name. Will take data till last line"
 else 
-    endLine=`grep -n "${str2}" $fileName | cut -d : -f1` 
+    endLine=`grep -n "${str2}" $fileName | cut -d : -f1 | head -1` 
     if [ -z "$endLine" ]; then
          echo "No match found for string \"$str2\" in $fileName. "
     else
@@ -103,4 +108,3 @@ extractedLines=`echo "$endLine - $stLine + 1" | bc`
 echo "Dumping $extractedLines lines of info (between line#$stLine and line#$endLine) from $fileName at $outputfile"
 
 sed -n $stLine,"$endLine"p $fileName > $outputfile 
-exit 0

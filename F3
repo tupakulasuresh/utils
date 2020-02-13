@@ -33,6 +33,7 @@ function USAGE()
     echo "   -s|--search     : Specify the match pattern. If speicfied, this will display all the files that matches the specified pattern (default=\"${search_for}\")"
     echo "   -i|--ignorecase : Specify if the search should be case insensitive (default=off)"
     echo "   -n|--num        : Specify if the search should print the linenum and matching line along with the filename (default=off)"
+    echo "   -g|--grep-opts  : Specify grep options"
     echo "   -h|--help       : To display this help"
     exit -1
 }
@@ -63,6 +64,10 @@ while [ $# -gt 0 ]; do
             grep_opts=$(echo ${grep_opts} | sed 's/l//g')
             grep_opts="${grep_opts}Hn"
             ;;
+         -g|--grep-opts)
+            shift 1
+            grep_opts="${grep_opts} $1"
+            ;;
          -h|--help)
             USAGE
             ;;
@@ -75,7 +80,7 @@ done
 
 #echo "dir=${dir_name} : searh_pattern=${search_pattern} : name = ${name}"
 
-base_cmd="find ${dir_name} -type f"
+base_cmd="find ${dir_name} -path '*/.git*' -prune -o -type f"
 
 if [ ! -z "${filename}" ]; then 
     base_cmd="${base_cmd} -name \"${filename}\""

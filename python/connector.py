@@ -288,3 +288,9 @@ class ConnectToNode(object):
                     self.sess_mgr.interact()
                 except OSError:
                     self.sess_mgr.close_session()
+
+
+if __name__ == '__main__':
+    td = ConnectToNode()
+    td.connect()
+    td.interact()

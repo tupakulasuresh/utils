@@ -14,11 +14,13 @@ import signal
 import pexpect
 
 
-SSH_OPTS = "\
-        -o ServerAliveInterval=120 \
-        -o UserKnownHostsFile=/dev/null \
-        -o StrictHostKeyChecking=no \
-        -q "
+SSH_OPTS = [
+    "-q",
+    "-o ServerAliveInterval=120",
+    "-o UserKnownHostsFile=/dev/null",
+    "-o StrictHostKeyChecking=no",
+]
+SSH_OPTS = " ".join(SSH_OPTS)
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s',
@@ -91,6 +93,10 @@ class SessionManager(object):
         return self.open_connection(cmd)
 
     def handle_terminal_resize(self):
+        # use current terminal size initially
+        rows, cols = map(int, os.popen('stty size', 'r').read().split())
+        self.session.setwinsize(rows, cols)
+        # trigger automatic resizing
         signal.signal(signal.SIGWINCH, self.sigwinch_passthrough)
 
     def open_connection(self, cmd):

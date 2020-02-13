@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4
 LOG = logging.getLogger(__name__)
 
 
-def is_ip_reachable(ip, count=2, interval=0.1):
+def is_ip_reachable(ip, count=2, interval=0.2):
     if is_valid_ipv4(ip):
         cmd = 'ping'
     elif is_valid_ipv6(ip):

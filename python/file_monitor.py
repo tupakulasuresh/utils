@@ -46,7 +46,6 @@ class File_Monitor(object):
 
     def init_session(self):
         self.sess_mgr.reconnect()
-        self.sess_mgr.execute_cmd('stty columns 1000')
         self.sess_mgr.session.timeout = 100
 
     def get_latest_file(self):
@@ -98,7 +97,8 @@ class File_Monitor(object):
 
     @staticmethod
     def parse_cmdline_args(input_args):
-        assert input_args, "Specify input args"
+        if not input_args:
+            input_args = ["-h"]
 
         parser = optparse.OptionParser()
         parser.add_option("-t", "--testbed", action="store", dest="testbed",

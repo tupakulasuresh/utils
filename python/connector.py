@@ -11,15 +11,6 @@ import logging
 from iputils import is_ip_reachable, is_valid_ip, ip_to_name, name_to_ip, is_valid_port
 from sess_mgr import SessionManager
 
-
-TESTBED_PASSWORD = None
-DUT_USERNAME = None
-DUT_PASSWORD = None
-ROOT_USERNAME = 'root'
-ROOT_PASSWORD = None
-SET_COLUMNS = "set columns 100"
-
-
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s',
                     datefmt='%m/%d/%Y %T')
 LOG = logging.getLogger(__name__)
@@ -29,11 +20,17 @@ class ConnectToNode(object):
     # populate nameservers info to resolve hostname
     NAMESERVERS = {}
 
+    TESTBED_PASSWORD = None
+    DUT_USERNAME = None
+    DUT_PASSWORD = None
+    ROOT_USERNAME = 'root'
+    ROOT_PASSWORD = None
+
     def __init__(self, *args):
         self.username = None
         self.password = None
-        self.cmd_username = DUT_USERNAME
-        self.cmd_password = DUT_PASSWORD
+        self.cmd_username = self.DUT_USERNAME
+        self.cmd_password = self.DUT_PASSWORD
         self.sess_mgr = None
         self.log_file = None
         self.node_full_name = None
@@ -49,7 +46,8 @@ class ConnectToNode(object):
         self.status = self.validate_input(*args)
 
     def parse_cmdline_args(self, input_args):
-        assert input_args, "Specify input args"
+        if not input_args:
+            input_args=["-h"]
 
         parser = optparse.OptionParser()
         parser.add_option("-n", "--node", "-d", "--dut", action="store",
@@ -146,6 +144,7 @@ class ConnectToNode(object):
         else:
             self.parse_cmdline_args(sys.argv[1:])
 
+        t = time.time
         options = self.options
         self.cmd = options.cmd
         self.linux = options.linux
@@ -173,8 +172,8 @@ class ConnectToNode(object):
             self.enable_logging(options.logdir, log_prefix)
 
         if options.root:
-            self.username = ROOT_USERNAME
-            self.password = ROOT_PASSWORD
+            self.username = self.ROOT_USERNAME
+            self.password = self.ROOT_PASSWORD
 
         # use user specified credentials
         if options.login is not None:
@@ -238,7 +237,7 @@ class ConnectToNode(object):
         # remove domain name
         self.testbed = testbed.split('.')[0]
         path = '/'.join([""] + [self.testbed] + link[2:-1])
-        cmd = [SET_COLUMNS, 'cd {}'.format(path)]
+        cmd = ['cd {}'.format(path)]
         if follow is True:
             file_name = link[-1]
             cmd.append("tail -f {}".format(os.path.join(path, file_name)))
@@ -252,11 +251,11 @@ class ConnectToNode(object):
         pass
 
     def update_to_execute_on_testbed(self, cmd):
-        self.cmd = ";".join([SET_COLUMNS, cmd, self.cmd])
+        self.cmd = ";".join([cmd, self.cmd])
         self.cmd = self.cmd.strip().strip(';')
         self.ip = self.testbed_ip
         self.username = self.testbed
-        self.password = TESTBED_PASSWORD
+        self.password = self.TESTBED_PASSWORD
         self.port = None
 
     def connect(self):

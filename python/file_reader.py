@@ -2,10 +2,8 @@
 python utilities to interact with device remotely using ssh/telnet
 '''
 
-import sys
 import os
 import logging
-import paramiko
 from iputils import is_local_ip
 
 
@@ -31,9 +29,7 @@ class ReadFile(object):
         self.username = username
         self.password = password
 
-        if self.filename is None or not os.path.isfile(os.path.expanduser(self.filename)):
-            LOG.error('Invalid file : %s', filename)
-            sys.exit(1)
+        assert self.filename, "File can't be empty"
 
     def get_data_from_file(self):
         if self.ip is None or is_local_ip(self.ip):
@@ -65,6 +61,7 @@ class ReadFile(object):
             return self.get_filedata_using_os_popen()
 
     def get_filedata_using_paramiko(self):
+        import paramiko
         LOG.debug('Connecting to %s using paramiko ...', self.ip)
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

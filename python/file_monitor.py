@@ -17,7 +17,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4
                     datefmt='%m/%d/%Y %T')
 LOG = logging.getLogger(__name__)
 
-
+# pylint: disable=too-many-instance-attributes
 class File_Monitor(object):
 
     def __init__(self, *args):

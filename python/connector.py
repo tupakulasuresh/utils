@@ -8,8 +8,8 @@ import optparse
 import errno
 import getpass
 import logging
-from utils.iputils import is_ip_reachable, is_valid_ip, ip_to_name, name_to_ip, is_valid_port
-from utils.sess_mgr import SessionManager
+from iputils import is_ip_reachable, is_valid_ip, ip_to_name, name_to_ip, is_valid_port
+from sess_mgr import SessionManager
 
 
 TESTBED_PASSWORD = None

@@ -1,0 +1,54 @@
+#!/bin/bash
+source ~/myUtils/BASH_LIB_UTILS.sh
+work_dir=$(get_work_dir)
+
+function check_for_modified_files()
+{
+    gen_tags=1
+    # when there are no tags present
+    if [ -f $2 ]; then
+        if [ $(is_mac) == 'true' ]; then 
+            tags_create_at=$(stat -f "%Sm" -t "%s" $2)
+        else
+            tags_create_at=$(stat -c "%Y" $2)
+        fi
+        time_since_tags_generated=$(($(date +%s) - $tags_create_at))
+        if [ $time_since_tags_generated -gt 0 ]; then
+            no_of_files_modified=$(find $1 -type f -name "*.py" -newermt "-$time_since_tags_generated seconds" | wc -l)
+            if [ $no_of_files_modified -eq 0 ]; then
+                gen_tags=0
+            fi
+        fi
+    fi
+    echo ${gen_tags}
+}
+
+function generate_tags()
+{
+    git_repo="${work_dir}/${1}"
+    source_dir="${git_repo}"
+
+    if [ ! -d ${source_dir} ]; then
+        log_msg "${source_dir} : No such directory"
+        return 1
+    fi
+    output_file="${git_repo}/.git/tags"
+    if [ $(check_for_modified_files ${source_dir} ${output_file}) -eq 0 ]; then 
+        log_msg "${source_dir}: [Not required]"    ;#"No files modified since last tags generation"
+        return 1
+    fi
+    log_msg -n "Generating tags from ${source_dir}.  Tags in ${output_file} ... " 
+    #ctags --python-kinds=-i -o ${output_file} $(find ${source_dir} -type f -name "*.py")
+    ctags --python-kinds=-i -R --exclude=.git -o ${output_file} ${source_dir}/* > /dev/null 2>&1
+    log_msg "[Done]"
+}
+
+if [ $# -eq 0 ]; then 
+    for dir in $(find $work_dir -type d -name "*.git" -maxdepth 1); do 
+        generate_tags $(basename $dir)
+    done
+else
+    generate_tags "${1}.git"
+fi
+
+log_msg "$(time_taken)"

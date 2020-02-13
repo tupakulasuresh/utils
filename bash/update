@@ -1,0 +1,54 @@
+#!/bin/bash
+# script to install python package in develop mode
+
+function USAGE ()
+{
+     echo ""
+     echo "-------------------------------------------------------------------------------------------"
+     echo "update -p|--pkg <pkg_name> [-h|--help]"
+     echo ""
+     echo "-p|--pkg   ->  provide pkg name to be updated"
+     echo "-d|--dir   ->  provide pygash source directory"
+     echo "-h|--help   ->  to dump help"
+     echo "-------------------------------------------------------------------------------------------"
+     exit 0
+}
+
+function remove_pkg ()
+{
+    echo "Uninstalling pkg $1 ..."
+    pip uninstall -y $1
+}
+
+function install_pkg ()
+{
+    echo "Installing pkg $1 ..."
+    python setup.py develop
+}
+
+pkgs=""
+dir="/home/${USER}/ws/pygash"
+while [ $# -gt 0 ]; do
+    case $1 in
+       -p|--pkg)
+          shift 1;
+          pkgs=$1;;
+       -h|--help)
+          USAGE;;
+       *)
+         pkgs=$*;;
+    esac
+    shift 1
+done
+
+for pkg in $pkgs; do 
+    pkg_loc="$dir/$pkg"
+    if [ ! -d $pkg_loc ]; then
+        echo "$pkg_loc: No such directory. Skipping"
+        continue
+    fi
+    cd $pkg_loc
+    remove_pkg $pkg
+    install_pkg $pkg
+    echo "---------------------------------------"
+done

@@ -1,0 +1,90 @@
+#!/bin/bash
+source ~/myUtils/BASH_LIB_UTILS.sh
+function expand_branch()
+{
+    case $1 in
+        "co")
+            branch="congo";;
+        "cr")
+            branch="crystal";;
+        "da")
+            branch="danube";;
+        "dr")
+            branch="drava";;
+        "eb")
+            branch="ebro";;
+        "eu")
+            branch="euphrates";;
+        *)
+            branch=$1;;
+    esac
+    echo "$(get_work_dir)/${branch}.git" 
+}    
+
+function expand_dir()
+{
+
+    # system dir
+    #doc/  ifabric/  iswitch/  iswitch_qa/  ldapcerts/  libs/  sbt/  scale-dev-configs/  scenarios/  SDK/  switch/  tmp/  vLEAF/
+    path=""
+    case $1 in
+        "test"|"."|"t"|"tst")
+            path="." ;;
+        "sys")
+            path="system" ;;
+        "tb")
+            path="system/ifabric/test_blocks" ;;
+        "tbw")
+            path="system/ifabric/test_blocks/wan" ;;
+        "ms")
+            path="system/ifabric/test_blocks/multisite" ;;
+        "tbi")
+            path="system/ifabric/test_blocks/ixia" ;;
+        "tc")
+            path="system/ifabric/test_cases" ;;
+        "ts")
+            path="system/ifabric/test_suites" ;;
+        "wa")
+            path="system/ifabric/test_blocks/wan" ;;
+        "wl")
+            path="system/ifabric/ifav/libs/wanlib" ;;
+        "ml")
+            path="system/ifabric/ifav/libs/msite" ;;
+        "il")
+            path="system/ifabric/ifav/libs/ixia" ;;
+        *)
+            echo "WARNING: No mapping defined yet for \"$1\""
+    esac
+    if [ ! -z ${path} ]; then
+        echo "test/$path"
+    fi
+}
+
+# default values
+s_branch="euphrates"
+s_dir="test"
+
+if [ $# -eq 2 ]; then 
+    s_branch=$1
+    s_dir=$2
+elif [ $# -eq 1 ]; then
+    s_dir=$1
+fi
+
+
+s_branch=$(expand_branch $s_branch)
+if [ ! -d ${s_branch} ]; then
+    echo "$s_branch: Invalid branch"
+else
+    s_dir=$(expand_dir $s_dir)
+    if [ $(echo $s_dir | grep -c "^test") -eq 0 ]; then
+        echo "$s_dir: Invalid directory"
+    else
+        dir=${s_branch}/${s_dir}
+        if [ ! -d ${dir} ]; then
+            echo "$dir: No such directory"
+        else
+            cd $dir
+        fi
+    fi
+fi

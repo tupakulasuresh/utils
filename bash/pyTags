@@ -1,0 +1,23 @@
+#!/bin/bash
+source ~/myUtils/BASH_LIB_UTILS.sh
+work_dir='/home/stupakul'
+
+if [ $# -eq 0 ]; then 
+    work_dir="$work_dir"
+else
+    work_dir="$work_dir/$1"
+fi
+work_dir="$work_dir/ws/pygash"
+
+if [ ! -d ${work_dir} ]; then
+    echo "${work_dir}: No such directory"
+    exit -1
+fi
+out_file="${work_dir}/tags"
+log_msg "Generating tags for $work_dir ..."
+log_msg "Tags are stored at $out_file"
+cd ${work_dir}
+
+ctags --list-kinds=python -R --links=no -o ${out_file} > /dev/null 2>&1 
+
+log_msg "$(time_taken)"

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+function USAGE ()
+{
+     echo ""
+     echo "-------------------------------------------------------------------------------------------"
+     echo "vid -f|--file <file_name> -b|--branch <branch> [-p|--print] [-h|--help]"
+     echo ""
+     echo "-f|--file   ->  provide a valid file name"
+     echo "-b|-branch  ->  provide a valid branch name with which current file has to diff'ed"
+     echo "-p|--print  ->  print diff on screen. If not provided, it will open file using vim"
+     echo "-h|--help   ->  to dump help"
+     echo "-------------------------------------------------------------------------------------------"
+     exit 0
+}
+
+diff=false
+branch=""
+file_name=""
+diff_opts=""
+vim_opts=""
+while [ $# -gt 0 ]; do
+    case $1 in
+       -b|--branch)
+          shift 1;
+          branch=$1;;
+       -f|--file)
+          shift 1;
+          file_name=$1;;
+       -p|--print)
+          diff=true;;
+       -i|--ignore_space)
+          diff_opts="$diff_opts -b -B";
+          vim_opts="$vim_opts -c 'set diffopt+=iwhite'";;
+       -h|--help)
+          USAGE;;
+       *)
+         echo "Unknown option $1"
+         USAGE;;
+    esac
+    shift 1
+done
+
+if [ ! -f $file_name ]; then
+    echo "$file_name : No such file"
+    USAGE
+fi
+org_file=$(echo $(cd $(dirname $file_name); pwd)/$(basename $file_name))
+org_branch=$(echo $org_file | awk -F "/" '{print $4}')
+
+if [ -z $branch ]; then
+    echo "please provide branch name"
+    USAGE
+elif [ $org_branch == $branch ]; then
+    echo "Skipping diff : orig branch and diff requested branch are same"
+echo "current branch    : $org_branch"
+    echo "diff requested on : $branch"
+    exit 0
+fi
+
+diff_with_file=$(echo $org_file|sed "s/$org_branch/$branch/")
+
+if [ ! -f $diff_with_file ]; then
+    echo "Constructed file name with branch provided doesn't exists. Cannot perform diff"
+    echo "Diff file : $diff_with_file"
+    echo "Orig file : $org_file"
+    exit 0
+fi
+
+echo "Performing diff of $(basename $org_file) between branches $org_branch, $branch"
+
+if $diff; then
+   eval diff $diff_opts $org_file $diff_with_file
+else
+   eval vimdiff $vim_opts $org_file $diff_with_file
+fi

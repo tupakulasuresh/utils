@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+     pattern="*sa_*.der"
+else
+     pattern="${1}_*.der"
+fi
+
+for i in $(ls $pattern | grep cert); do 
+   a=$(openssl x509 -inform der -noout -text -in $i | grep "Signature Algorithm" | sort -u)
+   if [ $(echo $i | grep -c rsa_) -ge 1 ]; then 
+        found=$(echo $a | grep -i -o $(echo $i | awk -F "_" '{print $2".*"$1}'))
+   else
+        found=$(echo $a | grep -i -o $(echo $i | awk -F "_" '{print $1".*"$2}'))
+   fi
+   printf "%-30s -> %-50s -> %s\n" $i "$a" $found
+done

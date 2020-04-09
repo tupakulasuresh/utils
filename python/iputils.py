@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4
 LOG = logging.getLogger(__name__)
 
 
-def is_ip_reachable(ip, count=2, interval=0.2):
+def is_ip_reachable(ip, count=1, wait=3):
     if is_valid_ipv4(ip):
         cmd = 'ping'
     elif is_valid_ipv6(ip):
@@ -20,8 +20,8 @@ def is_ip_reachable(ip, count=2, interval=0.2):
     else:
         raise ValueError("Invalid ip %s" % ip)
 
-    ret_val = os.system('%s -c %d -i %s -q %s > /dev/null 2>&1'
-                        % (cmd, count, interval, ip)
+    ret_val = os.system('%s -c %d -w %d -q %s > /dev/null 2>&1'
+                        % (cmd, count, wait, ip)
                        )
     return ret_val == 0
 

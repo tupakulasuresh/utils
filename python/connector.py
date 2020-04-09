@@ -47,7 +47,7 @@ class ConnectToNode(object):
 
     def parse_cmdline_args(self, input_args):
         if not input_args:
-            input_args=["-h"]
+            input_args = ["-h"]
 
         parser = optparse.OptionParser()
         parser.add_option("-n", "--node", "-d", "--dut", action="store",
@@ -144,7 +144,6 @@ class ConnectToNode(object):
         else:
             self.parse_cmdline_args(sys.argv[1:])
 
-        t = time.time
         options = self.options
         self.cmd = options.cmd
         self.linux = options.linux
@@ -222,9 +221,9 @@ class ConnectToNode(object):
             assert is_valid_ip(self.ip),\
                 "Invalid IP: {}".format(self.ip)
 
-        if self.console or self.port is not None:
-            assert is_valid_port(self.port),\
-                "Invalid port: {}".format(self.port)
+            if self.console or self.port is not None:
+                assert is_valid_port(self.port),\
+                    "Invalid port: {}".format(self.port)
 
         return True
 

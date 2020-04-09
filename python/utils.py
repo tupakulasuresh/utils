@@ -1,3 +1,5 @@
+from __future__ import print_function
+import time
 import sys
 import re
 import os
@@ -415,3 +417,13 @@ class SessionManager(object):
             if return_output:
                 return str(self.session.before) + str(self.session.after)
         return True
+
+def timeit(method):
+    def timed(*args, **kwargs):
+        print("Start %s" % method.__name__)
+        ts = time.time()
+        result = method(*args, **kwargs)
+        te = time.time()
+        print("%-30s [Time taken: %.2f ms]" % (method.__name__, (te - ts) * 1000))
+        return result
+    return timed

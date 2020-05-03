@@ -46,6 +46,7 @@ class File_Monitor(object):
 
     def init_session(self):
         self.sess_mgr.reconnect()
+        self.sess_mgr.execute_cmd('stty columns 1000')
         self.sess_mgr.session.timeout = 100
 
     def get_latest_file(self):

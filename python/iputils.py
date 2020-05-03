@@ -47,7 +47,14 @@ def get_dns_suffixs(node_name, searchin=None):
             nameservers = searchin.get(prefix)
             break
     else:
-        nameservers = searchin.items()
+        nameservers = []
+        for entry in searchin.values():
+            if isinstance(entry, list):
+                nameservers.extend(entry)
+            else:
+                nameservers.append(entry)
+        nameservers = list(set(nameservers))
+
     return nameservers
 
 def get_ip_using_nslookup(node_name, dns_suffixs=None, searchin=None):
@@ -67,6 +74,7 @@ def get_ip_using_nslookup(node_name, dns_suffixs=None, searchin=None):
             dns_suffixs = get_dns_suffixs(node_name, searchin=searchin)
         else:
             dns_suffixs = []
+
 
     if not isinstance(dns_suffixs, list):
         dns_suffixs = dns_suffixs.split(' ')
@@ -111,7 +119,7 @@ def is_valid_ip(ip):
         LOG.debug('validate ip %s', ip)
         if is_valid_ipv4(ip) is True or is_valid_ipv6(ip) is True:
             return True
-    LOG.warning('%s: not a valid ip.', ip)
+    LOG.debug('%s: not a valid ip.', ip)
     return False
 
 def is_valid_port(port):

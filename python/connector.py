@@ -9,11 +9,13 @@ import errno
 import getpass
 import logging
 from iputils import is_ip_reachable, is_valid_ip, ip_to_name, name_to_ip, is_valid_port
-from sess_mgr import SessionManager
+from sess_mgr import SessionManager, SSH_OPTS
+from file_monitor import File_Monitor
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s',
                     datefmt='%m/%d/%Y %T')
 LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.INFO)
 
 # pylint: disable=too-many-instance-attributes
 class ConnectToNode(object):
@@ -41,15 +43,18 @@ class ConnectToNode(object):
         self.testbed = None
         self.ip = None
         self.proto = None
-        self.options = None
+        self.testbed_ip = None
+        self.path = None
+        self.filename = None
+        self.parser = None
 
-        self.status = self.validate_input(*args)
+        self.define_cli_options(*args)
+        options = self.parse_cmdline_args(*args)
+        self.status = self.validate_input(options)
 
-    def parse_cmdline_args(self, input_args):
-        if not input_args:
-            input_args = ["-h"]
-
+    def define_cli_options(self):
         parser = optparse.OptionParser()
+        self.parser = parser
         parser.add_option("-n", "--node", "-d", "--dut", action="store",
                           default=None,
                           dest="node",
@@ -107,12 +112,25 @@ class ConnectToNode(object):
         parser.add_option("--link", action="store", dest="link",
                           default=None,
                           help="to go to regress link directory")
-        parser.add_option("-f", "--follow", action="store_true", dest="follow",
+        parser.add_option("--download", "--get", "-g", action="store",
+                          dest="download_link", default=None,
+                          help="download test_console.txt from regress link")
+        parser.add_option("-m", "--monitor", action="store_true", dest="monitor",
                           default=False,
-                          help="to do tail on a file specified by link")
+                          help="to do tail on the latest file file specified --path option")
+        parser.add_option("--filename", "-f", action="store", dest="filename",
+                          help="tailf on recently updated file with name,\
+                                  valid only with -m option")
 
-        (options, _args) = parser.parse_args(input_args)
-        self.options = options
+
+    def parse_cmdline_args(self, input_args=None):
+        input_args = input_args.split(' ') if input_args else sys.argv[1:]
+        if not input_args:
+            input_args = ['-h']
+        (options, _args) = self.parser.parse_args(input_args)
+        # don't need parser object now
+        self.parser = None
+        return options
 
     def enable_logging(self, path, nodeName):
         try:
@@ -136,39 +154,37 @@ class ConnectToNode(object):
             raise
         LOG.info('For logs, check %s', self.log_file)
 
-    # pylint: disable=too-many-branches, too-many-statements
-    def validate_input(self, input_args=None):
-        LOG.debug('process and validate input args ...')
-        if input_args:
-            self.parse_cmdline_args(input_args.split(' '))
-        else:
-            self.parse_cmdline_args(sys.argv[1:])
 
-        options = self.options
+    # pylint: disable=too-many-branches, too-many-statements
+    def validate_input(self, options):
+        LOG.debug('process and validate input args ...')
         self.cmd = options.cmd
         self.linux = options.linux
         self.console = options.console
         self.testbed = options.testbed
-        self.testbed_ip = name_to_ip(self.testbed, searchin=self.NAMESERVERS)
         self.port = options.port
         self.ip = options.ip
         self.proto = options.proto
         self.node = options.node
-        self.link = options.link
         self.me = options.me
-
-        if self.link:
-            self.process_link(follow=options.follow)
-
-        if (options.verbose or options.debug or options.ping):
-            LOG.setLevel(logging.DEBUG)
+        self.filename = options.filename
 
         # logging
+        if (options.verbose or options.debug or options.ping):
+            LOG.setLevel(logging.DEBUG)
         if options.log:
             log_prefix = "{}_{}".format(options.testbed, options.node)
             if self.console:
                 log_prefix += "_cnsl"
             self.enable_logging(options.logdir, log_prefix)
+
+
+        link = options.link if options.link else options.download_link
+        if link:
+            self.extract_data_from_link(link)
+
+        if not self.testbed_ip:
+            self.testbed_ip = name_to_ip(self.testbed, searchin=self.NAMESERVERS)
 
         if options.root:
             self.username = self.ROOT_USERNAME
@@ -180,6 +196,13 @@ class ConnectToNode(object):
 
         if options.password is not None:
             self.password = options.password
+
+        if options.download_link:
+            return self.download_link()
+        elif options.monitor:
+            return self.monitor_log()
+        elif options.link:
+            self.go2_link_location()
 
         if self.me:
             self.username = getpass.getuser()
@@ -227,19 +250,61 @@ class ConnectToNode(object):
 
         return True
 
-    def process_link(self, follow=False):
-        link = filter(None, self.link.split('/'))
+    def monitor_log(self):
+        cmd_args = '-t {} -l {} --password {}'
+        cmd_args = cmd_args.format(self.testbed, self.username, self.password)
+        if self.filename:
+            cmd_args += " --filename {}".format(self.filename)
+
+        fm = File_Monitor(cmd_args)
+        try:
+            fm.monitor_file()
+        except KeyboardInterrupt:
+            LOG.warning("User interrupt. Terminating the process")
+        except Exception:
+            raise
+        return False
+
+    def download_link(self, dst_file=None):
+        src_file = os.path.join(self.path, self.filename)
+        if not dst_file:
+            os.path.join("/tmp/", self.filename)
+
+        if not os.path.exists(os.path.dirname(dst_file)):
+            os.makedirs(os.path.dirname(dst_file))
+
+        cmd = "sshpass -p {} scp {} {}@{}:{} {}"
+        cmd = cmd.format(self.password,
+                         SSH_OPTS,
+                         self.testbed,
+                         self.testbed_ip,
+                         src_file,
+                         dst_file)
+        LOG.info("SRC file : %s", src_file)
+        LOG.info("TGT file : %s", dst_file)
+        os.system(cmd)
+
+        # no need to continue furthur after download is complete
+        return False
+
+    def extract_data_from_link(self, link):
+        if not link:
+            return
+        link = filter(None, link.split('/'))
         testbed = link[1]
         if is_valid_ip(testbed):
-            testbed = ip_to_name(testbed)
+            self.testbed_ip = testbed
+            self.testbed = ip_to_name(testbed)
+        else:
+            # remove domain name
+            self.testbed = testbed.split('.')[0]
+            self.testbed_ip = name_to_ip(testbed)
 
-        # remove domain name
-        self.testbed = testbed.split('.')[0]
-        path = '/'.join([""] + [self.testbed] + link[2:-1])
-        cmd = ['cd {}'.format(path)]
-        if follow is True:
-            file_name = link[-1]
-            cmd.append("tail -f {}".format(os.path.join(path, file_name)))
+        self.path = '/'.join([""] + [self.testbed] + link[2:-1])
+        self.filename = link[-1]
+
+    def go2_link_location(self):
+        cmd = ['cd {}'.format(self.path)]
         self.cmd = ";".join(cmd)
 
     def update_connect_info(self):

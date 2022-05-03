@@ -23,8 +23,7 @@ SSH_OPTS = [
 SSH_OPTS = " ".join(SSH_OPTS)
 
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s',
-                    datefmt='%m/%d/%Y %T')
+# logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s', datefmt='%m/%d/%Y %T')
 LOG = logging.getLogger(__name__)
 
 
@@ -35,7 +34,7 @@ class SessionManager(object):
 
     pass_prompt = '[pP]assword:'
     user_prompt = '(l|L)ogin:|Username:'
-    sess_prompt = r'[#\$>] |-TS#'
+    sess_prompt = r'[#\$>]|-TS#'
     nw_error = "|".join([
         "(No route to host)",
         "(Connection refused)",

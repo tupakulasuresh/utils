@@ -197,7 +197,7 @@ class SessionManager(object):
         return self.open_connection(cmd)
 
     def sigwinch_passthrough(self, sig, data):
-        print "Changing window size"
+        print("Changing window size")
         s = struct.pack("HHHH", 0, 0, 0, 0)
         a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(),
                                               termios.TIOCGWINSZ, s))

@@ -8,6 +8,7 @@ import socket
 
 
 # logging.basicConfig(format='%(asctime)s %(levelname)-8s %(filename)s:%(lineno)-4d %(message)-80s', datefmt='%m/%d/%Y %T')
+logging.basicConfig(format='%(levelname)s: %(message)s')
 LOG = logging.getLogger(__name__)
 
 

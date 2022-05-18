@@ -5,6 +5,7 @@ from Scheduler import Scheduler
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(format='%(levelname)s: %(message)s')
 LOG = logging.getLogger(__name__)
 
 def dummy_test():

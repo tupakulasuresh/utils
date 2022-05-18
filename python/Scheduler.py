@@ -7,6 +7,7 @@ from traceback import format_exc
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(threadName)s - %(message)s')
+logging.basicConfig(format='%(levelname)s: %(message)s')
 LOG = logging.getLogger(__name__)
 
 
